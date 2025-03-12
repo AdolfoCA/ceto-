@@ -1,0 +1,18 @@
+# Underwater ROV Mission Plan
+
+## Pre-Mission Setup
+1. Connect to the OptiTrack WiFi network
+2. Ensure the ROV is properly sealed and closed
+3. Launch the container by executing `galene.sh` from terminal
+
+## System Initialization
+4. SSH into the Odroid: `ssh odroid@10.0.0.24` (password: odroid)
+5. Start ROS core within the container
+6. Verify OptiTrack system has Galene properly enabled
+
+## Launch Mission Systems
+7. Initialize motion tracking: `roslaunch vrpn_client_ros_node sample.launch`
+8. Start ROV control module: `roslaunch bluerov bluerov_r1`
+
+## Mission Execution
+9. Begin mission execution with PID_Control
