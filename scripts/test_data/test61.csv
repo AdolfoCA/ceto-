@@ -1,0 +1,15 @@
+Timestamp,Data Column 1,Data Column 2
+2025-03-13 09:35:40,Initial Entry,Program Started
+# x0=-5.0, y0=0.0, z0=-0.007
+# roll0=-0.8140505466992727, pitch0=-19.713049510775278, yaw0=-41.774566449489214
+# Starting time: 1741858540.3060837
+# PID Gains:
+# Roll:  kp=0.02
+# Pitch: kp=0.046
+# Yaw:   kp=0.03
+# Z:     kp=4.0
+# X:     kp=12.0
+# Y:     kp=2.45
+# Encryption Configuration:
+# USE_ENCRYPTION: False
+Time,Fx,Fy,Fz,Mx,My,Mz,Pitch,Roll,Yaw,Altitude,x,y,set_x,set_y,set_altitude,set_roll,set_pitch,set_yaw,Thruster_1,Thruster_2,Thruster_3,Thruster_4,Thruster_5,Thruster_6,Encrypted,ComputationTime

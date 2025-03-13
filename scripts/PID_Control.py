@@ -4,7 +4,7 @@ import numpy as np
 import csv 
 import os
 from std_msgs.msg import Float64 ## Ceto
-#from sensor_msgs.msg import NavSatFix ## Galene
+from sensor_msgs.msg import NavSatFix ## Galene
 from sensor_msgs.msg import Imu
 from geometry_msgs.msg import Pose
 from scipy.spatial.transform import Rotation as R
@@ -12,6 +12,7 @@ from thruster_manager_v2 import ThrusterManager
 from create_new_csv_file import create_new_csv_file
 from geometry_msgs.msg import PoseStamped
 from guidance import Guidance
+from direct_rc import override_rc
 
 
 ############################### PID Class #################################
@@ -35,8 +36,8 @@ class PID:
         self.integral += error
         self.integral = np.clip(self.integral, -self.integral_limit, self.integral_limit)  
         derivative = error - self.prev_error
-        self.prev_error = error#!/usr/bin/env python3
-
+        self.prev_error = error
+        return self.kp * error + self.ki * self.integral + self.kd * derivative 
 ############################### ROV PID Controller #################################
 class ROVPIDController:
     """PID-based controller for an ROV using ROS."""
@@ -294,6 +295,8 @@ class ROVPIDController:
 
 if __name__ == "__main__":
     try:
+        ## To clean the queue of the motors 
+        #override_rc()
         ROVPIDController()
     except rospy.ROSInterruptException:
         pass

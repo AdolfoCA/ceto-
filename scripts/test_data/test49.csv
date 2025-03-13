@@ -1,0 +1,19 @@
+Timestamp,Data Column 1,Data Column 2
+2025-03-12 17:17:56,Initial Entry,Program Started
+# PID Gains:
+# Roll:  kp=0.02, ki=0.01, kd=0.18
+# Pitch: kp=0.046, ki=0.01, kd=0.14
+# Yaw:   kp=0.03, ki=0.01, kd=0.04
+# Z:     kp=4.0, ki=0.4, kd=1.8
+# X:     kp=12.0, ki=0.004, kd=0.3
+# Y:     kp=2.45, ki=0.005, kd=0.008
+# x0=-5.0, y0=0.0, z0=-0.036
+# roll0=-12.164701808028815, pitch0=-19.114885448927645, yaw0=-63.96449868540498
+# Starting time: 1741799876.246726
+# Encryption Configuration:
+# USE_ENCRYPTION: True
+# ENCRYPTION_FREQUENCY: 10 Hz
+# KEY_SIZE: 256 bits
+# ENCRYPT_CRITICAL_ONLY: True
+Time,Fx,Fy,Fz,Mx,My,Mz,Pitch,Roll,Yaw,Altitude,x,y,set_x,set_y,set_altitude,set_roll,set_pitch,set_yaw,Thruster_1,Thruster_2,Thruster_3,Thruster_4,Thruster_5,Thruster_6,Encrypted
+1741799881.310186,0,0,0,0,0,0,-19.053335199222076,-12.169085081928673,-64.14503424554675,-0.034,-5.0,0.0,-5.000000000000001,0.0,-0.036,-12.164701808028815,-19.114885448927645,-63.96449868540498,0.0,0.0,0.0,0.0,0.0,0.0,0

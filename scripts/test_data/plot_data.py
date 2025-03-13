@@ -295,5 +295,5 @@ def plot_data(csv_file):
 
 if __name__ == "__main__":
     # Simple usage without requiring command line arguments
-    csv_file = "test26.csv"  # Put your CSV filename here
+    csv_file = "test79.csv"  # Put your CSV filename here
     plot_data(csv_file)
