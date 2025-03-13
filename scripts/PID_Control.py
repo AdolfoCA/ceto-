@@ -8,6 +8,8 @@ from std_msgs.msg import Float64 ## Ceto
 from sensor_msgs.msg import Imu
 from geometry_msgs.msg import Pose
 from scipy.spatial.transform import Rotation as R
+
+from scripts.guidance import Triangle_Guidance, speed_feed_forward
 from thruster_manager_v2 import ThrusterManager  
 from create_new_csv_file import create_new_csv_file
 from geometry_msgs.msg import PoseStamped
@@ -17,7 +19,7 @@ from guidance import Guidance
 ############################### PID Class #################################
 class PID:
     """Simple PID controller implementation."""
-    def __init__(self, kp, ki, kd, setpoint=0, integral_limit=4):
+    def __init__(self, kp, ki, kd, setpoint=0., integral_limit=4.):
         self.kp = kp
         self.ki = ki
         self.kd = kd
@@ -97,8 +99,8 @@ class ROVPIDController:
         # Initialize PID controllers 
         self.pid_yaw = PID(kp=0.03, ki=0.01, kd=0.04, setpoint=170)
         self.pid_z = PID(kp=4.0, ki=0.4, kd=1.8, setpoint=17.1)
-        self.pid_x = PID(kp=12.0, ki=0.004, kd=0.3, setpoint=0)
-        self.pid_y = PID(kp=2.45, ki=0.005, kd=0.008, setpoint=0)
+        # self.pid_x = PID(kp=12.0, ki=0.004, kd=0.3, setpoint=0)
+        # self.pid_y = PID(kp=2.45, ki=0.005, kd=0.008, setpoint=0)
 
         self.pid_roll = PID(kp=0.02, ki=0.01, kd=0.18, setpoint=0)  
         self.pid_pitch = PID(kp=0.046, ki=0.01, kd=0.14, setpoint=0)
@@ -110,7 +112,14 @@ class ROVPIDController:
         rospy.sleep(5) ## wait for the guidance to be ready
 
         ## Generate the trajectory (define the function generate_trajectory)
-        self.Trajectory = Guidance(self.x0,self.y0)
+        # self.Trajectory = Guidance(self.x0,self.y0)
+
+
+        u0 = 1 # speed when moving to a target
+        A = np.array([self.x0,self.y0])
+        B = np.array([0.,0.])
+        C = np.array([1.,0.])
+        self.Guidance = Triangle_Guidance(A, B, C, u0,th_yaw=10,line_follow_gain=0.5)
 
         self.control_loop()  # Start control loop
 
@@ -250,21 +259,28 @@ class ROVPIDController:
 
         while not rospy.is_shutdown():
 
+            # update the guidance
+            X =  np.array([self.x,self.y,self.yaw])
+            self.Guidance.update(X)
+            self.set_yaw,self.set_vx = self.Guidance.guidance(X) # reference for the yaw and the x-speed
+
             # Desired location 
-            self.set_x = self.Trajectory.set_x()
-            self.set_y = self.Trajectory.set_y()
+            # self.set_x = self.Trajectory.set_x()
+            # self.set_y = self.Trajectory.set_y()
             self.set_altitude = self.z0
             self.set_roll = self.roll0
             self.set_pitch = self.pitch0
-            self.set_yaw = self.yaw0
+            # self.set_yaw = self.yaw0
 
             # Compute PID corrections
             Mx = self.pid_roll.update(self.roll,self.set_roll)
             My = self.pid_pitch.update(self.pitch,self.set_pitch)
             Mz = self.pid_yaw.update(self.yaw,self.set_yaw)
             Fz = self.pid_z.update(self.altitude,self.set_altitude)
-            Fx = self.pid_x.update(self.x,self.set_x)
-            Fy = self.pid_y.update(self.y,self.set_y)
+            # Fx = self.pid_x.update(self.x,self.set_x)
+            Fx = speed_feed_forward(self.set_vx) # TODO this feedforward is arbitrary (need to identify relation bwm speed and thrust of measure speed)
+            # Fy = self.pid_y.update(self.y,self.set_y)
+            Fy = 0.
             #rospy.loginfo(f"Current Orientation: Roll={self.roll:.2f}°, Pitch={self.pitch:.2f}°, Yaw={self.yaw:.2f}°, altitude={self.altitude:.2f}m,  Pose: x={self.x.3f}, y={self.y.3f}")
 
             # Log current sensor data
