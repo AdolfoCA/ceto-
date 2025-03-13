@@ -1,0 +1,18 @@
+Timestamp,Data Column 1,Data Column 2
+2025-03-13 13:02:24,Initial Entry,Program Started
+# Simulation Start Time: 2025-03-13 13:02:16
+# x0=-5.0, y0=0.0, z0=-0.008
+# roll0=14.712953179806773, pitch0=-20.702197506376514, yaw0=-17.28858416180362
+# Starting time: 1741870938.5223558
+# PID Gains:
+# Roll:  kp=0.02
+# Pitch: kp=0.046
+# Yaw:   kp=0.03
+# Z:     kp=4.0
+# X:     kp=12.0
+# Y:     kp=2.45
+# Encryption Configuration:
+# USE_ENCRYPTION: True
+# KEY_SIZE: 128 bits
+# ENCRYPT_CRITICAL_ONLY: False
+Time,Fx,Fy,Fz,Mx,My,Mz,Pitch,Roll,Yaw,Altitude,x,y,set_x,set_y,set_altitude,set_roll,set_pitch,set_yaw,Thruster_1,Thruster_2,Thruster_3,Thruster_4,Thruster_5,Thruster_6,Encrypted,ComputationTime
