@@ -1,0 +1,12 @@
+Simulation Start Time: 2025-03-13 13:08:12
+ROS Start Time: 1741871292.204979
+Encryption Configuration: USE_ENCRYPTION=True, KEY_SIZE=128 bits
+ENCRYPT_CRITICAL_ONLY: False
+Simulation End Time: 2025-03-13 13:08:43
+Simulation Duration (system): 31.30 seconds
+Simulation Duration (ROS): 31.30 seconds
+Total Iterations: 222
+Performance Metrics:
+  Average computation time: 7.33 ms
+  Min computation time: 5.90 ms
+  Max computation time: 11.55 ms

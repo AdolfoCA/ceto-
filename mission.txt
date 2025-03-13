@@ -1,5 +1,8 @@
 # Underwater ROV Mission Plan
 
+## Galene 10.0.0.24
+## Ceto 10.0.0.26
+
 ## Pre-Mission Setup
 1. Connect to the OptiTrack WiFi network
 2. Ensure the ROV is properly sealed and closed
@@ -15,4 +18,4 @@
 8. Start ROV control module: `roslaunch bluerov bluerov_r1`
 
 ## Mission Execution
-9. Begin mission execution with PID_Control
+9. Begin mission execution with PID_Control.
