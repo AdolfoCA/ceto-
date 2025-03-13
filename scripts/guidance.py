@@ -73,4 +73,107 @@ class Guidance:
         rospy.loginfo("waypoint number: iter={:.3f}," .format(self.iteration))
         return msg_pose 
 
+def sawtooth(x):
+    # return the modulo 2*pi of the angle x in [-pi,pi]
+    return 2*np.arctan(np.tan(x/2))
 
+def speed_feed_forward(vx):
+    # convert the desired surge into a thrust (static model)
+    # TODO: the model has not been identified yet, so I put a linear tranfomation
+    tau_x = 10*vx
+    return tau_x
+
+class Triangle_Guidance:
+    # guide the ROV for the triangle mission (A->B->C)
+    # compute a reference for speed and yaw
+    # step 1 from A to B
+    # step 2 turn toward C
+    # step 3 from B to C
+    # step 4 turn toward A
+    # step 5 from C to A
+    # step 6 turn toward B
+    # goto step 1
+
+    # a target position is reached when the robot is behind the target (half plane)
+    # a target angle is reached when the angle between the robot and the target is less than 10 degrees
+
+    def __init__(self, A, B, C, u0,th_yaw=10,line_follow_gain=0.5):
+        self.A = A # first point of the triangle A = [xa, ya] np array
+        self.B = B # second point of the triangle B = [xb, yb] np array
+        self.C = C # third point of the triangle C = [xc, yc] np array
+        self.state = 1 # state of the guidance automaton in {1,2,3,4,5,6}
+        self.target = B # current target position
+        self.previous_target = A # previous target position
+        self.u0 = u0 # speed when moving to a target
+        self.th_yaw = th_yaw # threshold (deg) for when the angle is reached when turning toward a target
+        self.line_follow_gain = line_follow_gain # gain for the line following system
+        print("state ", self.state)
+
+    def update(self, X):
+        # update the state of the guidance automaton
+        # X = [x, y, yaw] np array
+        if self.state == 1:
+            target_reached = np.dot(self.previous_target - self.target, X[0:2] - self.target) < 0
+            if target_reached:
+                self.state = 2
+                self.previous_target = self.target
+                self.target = self.C
+                print("state ", self.state)
+        elif self.state == 2:
+            yaw_toward_target = np.arctan2(self.target[1] - X[1], self.target[0] - X[0])
+            angle_reached = np.abs(sawtooth(yaw_toward_target - X[2])) < self.th_yaw * np.pi / 180
+
+            if angle_reached:
+                self.state = 3
+                print("state ", self.state)
+        elif self.state == 3:
+            target_reached = np.dot(self.previous_target - self.target, X[0:2] - self.target) < 0
+            if target_reached:
+                self.state = 4
+                self.previous_target = self.target
+                self.target = self.A
+                print("state ", self.state)
+        elif self.state == 4:
+            yaw_toward_target = np.arctan2(self.target[1] - X[1], self.target[0] - X[0])
+            angle_reached = np.abs(sawtooth(yaw_toward_target - X[2])) < self.th_yaw * np.pi / 180
+            if angle_reached:
+                self.state = 5
+                print("state ", self.state)
+        elif self.state == 5:
+            target_reached = np.dot(self.previous_target - self.target, X[0:2] - self.target) < 0
+            if target_reached:
+                self.state = 6
+                self.previous_target = self.target
+                self.target = self.B
+                print("state ", self.state)
+        elif self.state == 6:
+            yaw_toward_target = np.arctan2(self.target[1] - X[1], self.target[0] - X[0])
+            angle_reached = np.abs(sawtooth(yaw_toward_target - X[2])) < self.th_yaw * np.pi / 180
+            if angle_reached:
+                self.state = 1
+                print("state ", self.state)
+
+    def guidance(self, X):
+        # compute the desired yaw angle yaw_d
+        # and the desired speed u_d
+
+        if self.state % 2 == 0:
+            # turning toward a target
+            yaw_toward_target = np.arctan2(self.target[1] - X[1], self.target[0] - X[0])
+            return yaw_toward_target, 0.
+
+        else:
+            # line guidance system
+            line_vect = self.target - self.previous_target
+            yaw_line = np.arctan2(line_vect[1], line_vect[0])
+
+            # projected point on the line
+            pc = self.previous_target + np.dot(X[0:2] - self.previous_target, line_vect) / (
+                        np.linalg.norm(line_vect) ** 2) * (line_vect)
+
+            distance_to_line = np.linalg.norm(X[0:2] - pc)
+            if np.cross(X[0:2] - pc, line_vect) > 0:
+                distance_to_line = -distance_to_line
+
+            yaw_d = yaw_line + np.arctan(-self.line_follow_gain*distance_to_line)
+            return yaw_d, self.u0
