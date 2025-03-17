@@ -9,7 +9,7 @@ from sensor_msgs.msg import Imu
 from geometry_msgs.msg import Pose
 from scipy.spatial.transform import Rotation as R
 
-from scripts.guidance import Triangle_Guidance, speed_feed_forward
+from scripts.guidance import TriangleGuidancePathFollowing, speed_feed_forward,TriangleGuidanceTrajectoryTracking
 from thruster_manager_v2 import ThrusterManager  
 from create_new_csv_file import create_new_csv_file
 from geometry_msgs.msg import PoseStamped
@@ -120,7 +120,11 @@ class ROVPIDController:
         A = np.array([self.x0,self.y0])
         B = np.array([0.,0.])
         C = np.array([1.,0.])
-        self.Guidance = Triangle_Guidance(A, B, C, u0,th_yaw=10,line_follow_gain=0.5)
+        self.Guidance = TriangleGuidancePathFollowing(A, B, C, u0,th_yaw=10,line_follow_gain=0.5)
+
+        # alternative guidance
+        # T_trajectory = 60 # time to complete the trajectory (s)
+        # self.Guidance2 =  TriangleGuidanceTrajectoryTracking(A, B, C, T_trajectory)
 
         self.control_loop()  # Start control loop
 
@@ -265,13 +269,24 @@ class ROVPIDController:
             self.Guidance.update(X)
             self.set_yaw,self.set_vx = self.Guidance.guidance(X) # reference for the yaw and the x-speed
 
-            # Desired location 
+            # alternative guidance
+            # mission_time = rospy.Time.now().to_sec() - start_time
+            # pd,pd_dot,pd_ddot = self.Guidance2.get_reference(mission_time)   # careful ! these are in the world frame
+            # self.set_x = pd[0]
+            # self.set_y = pd[1]
+            # self.set_yaw = pd[2]
+            # alternative guidance
+            # TODO add the speed measurement and speed controller, or even the backstepping controller
+
+
+            # additional set_points
             # self.set_x = self.Trajectory.set_x()
             # self.set_y = self.Trajectory.set_y()
             self.set_altitude = self.z0
             self.set_roll = self.roll0
             self.set_pitch = self.pitch0
             # self.set_yaw = self.yaw0
+
 
             # Compute PID corrections
             Mx = self.pid_roll.update(self.roll,self.set_roll)
