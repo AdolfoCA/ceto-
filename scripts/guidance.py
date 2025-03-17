@@ -83,9 +83,10 @@ def speed_feed_forward(vx):
     tau_x = 10*vx
     return tau_x
 
-class Triangle_Guidance:
+class TriangleGuidancePathFollowing:
     # guide the ROV for the triangle mission (A->B->C)
-    # compute a reference for speed and yaw
+    # with a path planning method
+    # based on the current position, it computes a reference for speed and yaw
     # step 1 from A to B
     # step 2 turn toward C
     # step 3 from B to C
@@ -177,3 +178,96 @@ class Triangle_Guidance:
 
             yaw_d = yaw_line + np.arctan(-self.line_follow_gain*distance_to_line)
             return yaw_d, self.u0
+
+class TriangleGuidanceTrajectoryTracking:
+    # guide the ROV for the triangle mission (A->B->C)
+    # with a trajectory tracking method
+    # based on the current time, it computes a desired pose and its derivatives (pd,pd_dot,pd_ddot)
+    # step 1 from A to B
+    # step 2 turn toward C
+    # step 3 from B to C
+    # step 4 turn toward A
+    # step 5 from C to A
+    # step 6 turn toward B
+    # goto step 1
+
+    # each step last for a time T/6 where T is the period of the trajectory
+
+    def __init__(self, A, B, C,T):
+        self.A = A # 1st point of the triangle
+        self.B = B # 2nd point of the triangle
+        self.C = C # 3rd point of the triangle
+        self.T = T # period of the trajectory from A to A
+
+    def get_reference(self,t):
+        # input t : time since the beginning of the mission (s)
+        # output pd, pd_dot and pd_ddot (trajectory)
+        Dt = t % self.T # time in the trajectory loop
+        t_step = self.T/6 # time step for each step
+        Dt_step = Dt % t_step # time in the step
+
+        # time split in 6 steps
+        if Dt < t_step:
+            # goto B
+            yaw_target = np.arctan2(self.B[1] - self.A[1], self.B[0] - self.A[0])
+            p0 = np.array([self.A[0], self.A[1], yaw_target])
+            p1 = np.array([self.B[0], self.B[1], yaw_target])
+
+        elif Dt < 2*t_step:
+            # turn toward C
+            old_yaw_target = np.arctan2(self.B[1] - self.A[1], self.B[0] - self.A[0])
+            yaw_target = np.arctan2(self.C[1] - self.B[1], self.C[0] - self.B[0])
+            p0 = np.array([self.B[0], self.B[1], old_yaw_target])
+            p1 = np.array([self.B[0], self.B[1], yaw_target])
+        elif Dt < 3*t_step:
+            # goto C
+            yaw_target = np.arctan2(self.C[1] - self.B[1], self.C[0] - self.B[0])
+            p0 = np.array([self.B[0], self.B[1], yaw_target])
+            p1 = np.array([self.C[0], self.C[1], yaw_target])
+        elif Dt < 4*t_step:
+            # turn toward A
+            old_yaw_target = np.arctan2(self.C[1] - self.B[1], self.C[0] - self.B[0])
+            yaw_target = np.arctan2(self.A[1] - self.C[1], self.A[0] - self.C[0])
+            p0 = np.array([self.C[0], self.C[1], old_yaw_target])
+            p1 = np.array([self.C[0], self.C[1], yaw_target])
+        elif Dt < 5*t_step:
+            # goto A
+            yaw_target = np.arctan2(self.A[1] - self.C[1], self.A[0] - self.C[0])
+            p0 = np.array([self.C[0], self.C[1], yaw_target])
+            p1 = np.array([self.A[0], self.A[1], yaw_target])
+        else:
+            # turn toward B
+            old_yaw_target = np.arctan2(self.A[1] - self.C[1], self.A[0] - self.C[0])
+            yaw_target = np.arctan2(self.B[1] - self.A[1], self.B[0] - self.A[0])
+            p0 = np.array([self.A[0], self.A[1], old_yaw_target])
+            p1 = np.array([self.A[0], self.A[1], yaw_target])
+        pd, pd_dot, pd_ddot = self.interpolated_trajectory(p0, p1, Dt_step/t_step)
+        pd_dot = 1/t_step*pd_dot
+        pd_ddot = 1/t_step**2*pd_ddot
+        return pd, pd_dot, pd_ddot
+
+    def interpolated_trajectory(self, P0, P1, x):
+        # input P0, P1 : 2D poses [x,y,yaw]
+        # input x : normalized step time [0,1]
+        # trajectory interpolation from P0 to P1
+        # must go from pose P0 to pose P1
+        w,w_dot,w_ddot = self.function_w(x) # interpolation variables
+        dp = P1-P0
+        dp[2] = sawtooth(dp[2])
+        xy = P0 + w*dp
+        xy_dot = w_dot*dp
+        xy_ddot = w_ddot*dp
+        return xy, xy_dot, xy_ddot
+
+    def function_w(self,x):
+        # x in [0,1]
+        # smooth transition from 0 to 1
+        w = - 1/(np.pi*2) * np.sin(2*np.pi*x) + x
+        w_dot = 1-np.cos(2*np.pi*x)
+        w_ddot = 2*np.pi*np.sin(2*np.pi*x)
+
+        # alternative, linear motion
+        # w = x
+        # w_dot = 1
+        # w_ddot = 0
+        return w,w_dot,w_ddot
